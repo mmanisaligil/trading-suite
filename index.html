@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>⬡ VIVIENNE · TRADINGPANEL v2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="panel.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LANDING SCREEN
+     ══════════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <canvas id="landing-canvas"></canvas>
+  <div class="landing-content">
+    <div class="landing-eyebrow">VIVIENNE SUITE · ENGINE v8.0</div>
+    <h1 class="landing-title">
+      <span class="title-welcome">WELCOME,</span>
+      <span class="title-commander">COMMANDER</span>
+    </h1>
+    <div class="landing-subtitle">Quantum-Adaptive Trading Intelligence · Initialized</div>
+
+    <div class="landing-status-bar" id="landing-status-bar">
+      <div class="lsb-item">
+        <div class="lsb-dot" id="lsb-ws-dot"></div>
+        <span class="lsb-label">BINANCE WS</span>
+        <span class="lsb-val" id="lsb-ws-val">STANDBY</span>
+      </div>
+      <div class="lsb-divider"></div>
+      <div class="lsb-item">
+        <div class="lsb-dot" id="lsb-macro-dot"></div>
+        <span class="lsb-label">MACRO SERVER</span>
+        <span class="lsb-val" id="lsb-macro-val">OFFLINE</span>
+      </div>
+      <div class="lsb-divider"></div>
+      <div class="lsb-item">
+        <div class="lsb-dot lsb-dot-green"></div>
+        <span class="lsb-label">ENGINE</span>
+        <span class="lsb-val" id="lsb-engine-val">LOADED</span>
+      </div>
+    </div>
+
+    <div class="module-grid">
+      <button class="module-card" id="btn-traderecon" onclick="launchModule('traderecon')">
+        <div class="module-icon">◈</div>
+        <div class="module-name">TRADERECON</div>
+        <div class="module-desc">Crypto Futures · Live Binance Universe · On-Demand Engine Scan</div>
+        <div class="module-tag">FUTURES · USDT PAIRS</div>
+        <div class="module-arrow">→</div>
+      </button>
+      <button class="module-card" id="btn-macro" onclick="launchModule('macro')">
+        <div class="module-icon">⬡</div>
+        <div class="module-name">MACRO SIGNALS</div>
+        <div class="module-desc">DXY · 10Y · Yield Curve · Fed · Gold · WTI · Fear&Greed · BTC.D</div>
+        <div class="module-tag">REGIME CLASSIFIER · NODE:3002</div>
+        <div class="module-arrow">→</div>
+      </button>
+      <button class="module-card" id="btn-watchdog" onclick="launchModule('watchdog')">
+        <div class="module-icon">◉</div>
+        <div class="module-name">WATCHDOG</div>
+        <div class="module-desc">Deep Pair Analysis · MTF Engine · Macro Coherence Layer</div>
+        <div class="module-tag">ENGINE v8.0 · REGIME · SETUP CLASSIFIER</div>
+        <div class="module-arrow">→</div>
+      </button>
+    </div>
+
+    <div class="landing-clock" id="landing-clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PERSISTENT NAV BAR (shown when in a module)
+     ══════════════════════════════════════════════ -->
+<nav class="app-nav" id="app-nav">
+  <div class="nav-left">
+    <button class="nav-home" onclick="goHome()">⬡ VIVIENNE</button>
+    <span class="nav-sep">·</span>
+    <span class="nav-breadcrumb" id="nav-breadcrumb">—</span>
+  </div>
+  <div class="nav-center">
+    <button class="nav-btn" id="nav-traderecon" onclick="switchModule('traderecon')">◈ TRADERECON</button>
+    <button class="nav-btn" id="nav-macro" onclick="switchModule('macro')">⬡ MACRO</button>
+    <button class="nav-btn" id="nav-watchdog" onclick="switchModule('watchdog')">◉ WATCHDOG</button>
+    <button class="nav-btn" id="nav-siglog" onclick="switchModule('siglog')">◎ SIGNAL LOG<span class="nav-siglog-badge" id="nav-siglog-badge" style="display:none"></span></button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-macro-pill" id="nav-regime-pill">REGIME —</div>
+    <span class="macro-stale-badge" id="nav-macro-stale"></span>
+    <div class="nav-server-ctl">
+      <div class="srv-dot" id="nav-srv-dot"></div>
+      <span class="srv-label" id="nav-srv-label">SERVER OFF</span>
+      <button class="srv-btn" id="nav-srv-btn" onclick="toggleMacroServer()">START</button>
+    </div>
+    <div class="nav-clock" id="nav-clock">--:--:--</div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     MODULE: TRADERECON
+     ══════════════════════════════════════════════ -->
+<div id="screen-traderecon" class="screen">
+  <div class="module-header">
+    <div class="mh-left">
+      <span class="mh-icon">◈</span>
+      <span class="mh-title">TRADERECON</span>
+      <span class="mh-sub">Binance USDT Futures Universe</span>
+    </div>
+    <div class="mh-right">
+      <div class="ctx-chips">
+        <div class="ctx-chip"><span class="cc-lbl">F&G</span><span class="cc-val" id="tr-fg">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">BTC.D</span><span class="cc-val" id="tr-btcd">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">PAIRS</span><span class="cc-val" id="tr-pairs">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">SCANNED</span><span class="cc-val" id="tr-scanned" style="color:var(--green)">0</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">LONG</span><span class="cc-val" id="tr-longs" style="color:var(--green)">0</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">SHORT</span><span class="cc-val" id="tr-shorts" style="color:var(--red)">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-toolbar">
+    <button class="btn-primary" id="tr-refresh-btn" onclick="trBootUniverse()">↺ LOAD UNIVERSE</button>
+    <button class="btn-primary" id="tr-fullscan-btn" onclick="trFullScan()" style="background:var(--purple)">⚡ FULL SCAN</button>
+    <button id="tr-batchscan-btn" onclick="trBatchScan()">⚡ SCAN +25</button>
+    <button class="btn-ghost" id="tr-auto-btn" onclick="trToggleAutoScan()">AUTO: OFF</button>
+    <span class="tr-auto-countdown" id="tr-auto-countdown"></span>
+    <div class="tf-selector" id="tr-tf-selector">
+      <span class="tf-label">TF:</span>
+      <button class="tf-btn" data-tf="15m" onclick="trSetTF(this)">15m</button>
+      <button class="tf-btn active" data-tf="1h" onclick="trSetTF(this)">1H</button>
+      <button class="tf-btn" data-tf="4h" onclick="trSetTF(this)">4H</button>
+      <button class="tf-btn" data-tf="1d" onclick="trSetTF(this)">1D</button>
+    </div>
+    <div class="toolbar-filters">
+      <input type="text" class="search-box" id="tr-search" placeholder="Search pair…" oninput="trFilterTable()"/>
+      <select class="filter-sel" id="tr-filter-dir" onchange="trFilterTable()">
+        <option value="all">ALL DIR</option>
+        <option value="LONG">LONG</option>
+        <option value="SHORT">SHORT</option>
+        <option value="WATCH">WATCH</option>
+      </select>
+      <select class="filter-sel" id="tr-filter-fund" onchange="trFilterTable()">
+        <option value="all">ALL FUND</option>
+        <option value="pos">FUND+</option>
+        <option value="neg">FUND−</option>
+        <option value="extreme">EXTREME</option>
+      </select>
+    </div>
+    <div class="ws-status-chip">
+      <div class="ws-dot" id="tr-ws-dot"></div>
+      <span id="tr-ws-label">WS OFFLINE</span>
+    </div>
+  </div>
+
+  <!-- T1: Watchlist PSI Monitor Strip -->
+  <div id="wl-strip-wrap" class="wl-strip-wrap" style="display:none">
+    <div class="wl-strip-header">
+      <span class="wl-strip-title">★ WATCHLIST</span>
+      <span class="wl-strip-sub">PSI monitor · auto-refresh 75s</span>
+    </div>
+    <div id="wl-strip" class="wl-strip"></div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" id="tr-table">
+      <thead>
+        <tr>
+          <th onclick="trSort('rank')">#</th>
+          <th class="th-star" title="Watchlist">★</th>
+          <th onclick="trSort('symbol')">PAIR</th>
+          <th onclick="trSort('price')">PRICE</th>
+          <th onclick="trSort('chg')">24H %</th>
+          <th onclick="trSort('vol')">VOLUME</th>
+          <th onclick="trSort('funding')">FUNDING</th>
+          <th>SIGNAL</th>
+          <th>SCORE</th>
+          <th>STATE</th>
+          <th title="PSI Maturity">PSI</th>
+          <th title="Cross events / squeeze">✦</th>
+          <th title="Scan freshness">AGE</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tr-tbody">
+        <tr><td colspan="10" class="table-empty">Load universe to begin</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="module-log" id="tr-log"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODULE: MACRO SIGNALS
+     ══════════════════════════════════════════════ -->
+<div id="screen-macro" class="screen">
+  <div class="module-header">
+    <div class="mh-left">
+      <span class="mh-icon">⬡</span>
+      <span class="mh-title">MACRO SIGNALS</span>
+      <span class="mh-sub">Global Regime Intelligence Layer</span>
+    </div>
+    <div class="mh-right">
+      <div class="macro-regime-badge" id="macro-regime-badge">— REGIME —</div>
+      <button class="btn-ghost" onclick="fetchMacroData(false)">↺ REFRESH</button>
+      <button class="btn-ghost" onclick="fetchMacroData(true)">⚡ FORCE</button>
+    </div>
+  </div>
+
+  <!-- Server offline state -->
+  <div class="macro-offline-banner" id="macro-offline-banner">
+    <div class="mob-icon">⬡</div>
+    <div class="mob-text">
+      <div class="mob-title">MACRO SERVER OFFLINE</div>
+      <div class="mob-sub">Start the macro server to load global regime intelligence</div>
+    </div>
+    <button class="btn-primary" onclick="toggleMacroServer()">START SERVER</button>
+  </div>
+
+  <!-- Macro data grid -->
+  <div class="macro-grid" id="macro-grid" style="display:none">
+    <!-- Regime row -->
+    <div class="macro-section-title">REGIME CLASSIFIER</div>
+    <div class="regime-row" id="regime-row">
+      <div class="regime-score-block">
+        <div class="rsb-label">REGIME SCORE</div>
+        <div class="rsb-score" id="regime-score">—</div>
+        <div class="rsb-label">/ ±5</div>
+      </div>
+      <div class="regime-signals" id="regime-signals"></div>
+    </div>
+
+    <!-- Indicators grid -->
+    <div class="macro-section-title">INDICATORS</div>
+    <div class="macro-cards" id="macro-cards">
+      <!-- injected by JS -->
+    </div>
+
+    <div class="macro-footer" id="macro-footer"></div>
+  </div>
+
+  <div class="module-log" id="macro-log"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODULE: WATCHDOG v2 — FULL INFORMATIVE FLOW
+     ══════════════════════════════════════════════ -->
+<div id="screen-watchdog" class="screen">
+
+  <!-- HEADER -->
+  <div class="module-header">
+    <div class="mh-left">
+      <span class="mh-icon">◉</span>
+      <span class="mh-title">WATCHDOG</span>
+      <span class="mh-sub">Deep Pair Analysis · Engine v7.0 · Bybit Live · Macro Fusion</span>
+    </div>
+    <div class="mh-right">
+      <div class="ctx-chips">
+        <div class="ctx-chip"><span class="cc-lbl">PAIR</span><span class="cc-val" id="wd-pair-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">TF</span><span class="cc-val" id="wd-tf-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">PRICE</span><span class="cc-val" id="wd-price-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">MARK</span><span class="cc-val" id="wd-mark-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">24H%</span><span class="cc-val" id="wd-pct-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">FUND</span><span class="cc-val" id="wd-fund-label">—</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">OI</span><span class="cc-val" id="wd-oi-label">—</span></div>
+      </div>
+      <div class="wd-ws-status">
+        <div class="ws-dot" id="wd-ws-dot"></div>
+        <span id="wd-ws-label">BYBIT OFF</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="module-toolbar">
+    <div class="wd-pair-combo">
+      <input type="text" class="pair-input wd-pair-text" id="wd-pair-input"
+        placeholder="BTCUSDT" value="BTCUSDT"
+        list="wd-pair-datalist"
+        oninput="this.value=this.value.toUpperCase();wdPair=this.value.trim()"
+        autocomplete="off" spellcheck="false"/>
+      <datalist id="wd-pair-datalist"></datalist>
+    </div>
+    <div class="tf-selector">
+      <span class="tf-label">TF:</span>
+      <button class="tf-btn" data-tf="15m" onclick="wdSetTF(this)">15m</button>
+      <button class="tf-btn active" data-tf="1h" onclick="wdSetTF(this)">1H</button>
+      <button class="tf-btn" data-tf="4h" onclick="wdSetTF(this)">4H</button>
+      <button class="tf-btn" data-tf="1d" onclick="wdSetTF(this)">1D</button>
+    </div>
+    <button class="btn-ghost wd-nav-btn" onclick="wdNavPrev()" title="Previous pair [ bracket key">◀ PREV</button>
+    <button class="btn-primary" onclick="wdRunScan()">◉ DEEP SCAN</button>
+    <button class="btn-ghost wd-nav-btn" onclick="wdNavNext()" title="Next pair ] bracket key">NEXT ▶</button>
+    <label class="opt-toggle"><input type="checkbox" id="wd-use-macro" checked/> Macro</label>
+    <label class="opt-toggle"><input type="checkbox" id="wd-use-mtf" checked/> MTF</label>
+    <div class="wd-candle-countdown">
+      <span class="cc-lbl">NEXT CANDLE</span>
+      <span class="wdcc-val" id="wd-candle-cdown">—</span>
+    </div>
+    <button class="btn-ghost" onclick="wdForceCandles()">↺ CANDLES</button>
+    <button class="btn-ghost" onclick="wdSetAlarmFromScan()" style="margin-left:auto;color:var(--yellow);border-color:#c09020">🔔 SET ALARMS</button>
+    <button class="btn-ghost" onclick="wdClearAlarms()" style="color:var(--red);border-color:var(--red2)">✕ CLEAR</button>
+  </div>
+
+  <!-- ALARM BAR -->
+  <div class="wd-alarm-bar" id="wd-alarm-bar">
+    <div class="wdab-title">🔔 ENTRY ALARMS</div>
+    <div class="wd-alarm-list" id="wd-alarm-list"><div class="wda-empty">No alarms — run scan then click SET ALARMS</div></div>
+  </div>
+
+  <!-- BODY: two-column layout -->
+  <div class="wd-body-v2" id="wd-body">
+
+    <!-- ── LEFT COLUMN ── -->
+    <div class="wdv2-left">
+
+      <!-- PANEL A: LIVE TICKER + CANDLES -->
+      <div class="wdv2-panel" id="wdp-ticker">
+        <div class="wdv2-ptitle">
+          <span>◈ LIVE TICKER · BYBIT</span>
+          <span class="wdv2-ptitle-right" id="wd-bid-ask">BID — · ASK —</span>
+        </div>
+        <div class="wd-price-big-wrap">
+          <div class="wd-price-big" id="wd-price-big">—</div>
+          <div class="wd-price-ring" id="wd-price-ring">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(0,212,255,0.15)" stroke-width="2"/>
+              <circle id="wd-ring-circle" cx="22" cy="22" r="4" fill="rgba(0,212,255,0.3)"/>
+            </svg>
+          </div>
+        </div>
+        <div class="wd-ticker-meta">
+          <div class="wd-tm-item"><div class="wd-tm-lbl">HIGH 24H</div><div class="wd-tm-val" id="wd-high">—</div></div>
+          <div class="wd-tm-item"><div class="wd-tm-lbl">LOW 24H</div><div class="wd-tm-val" id="wd-low">—</div></div>
+          <div class="wd-tm-item"><div class="wd-tm-lbl">VOLUME</div><div class="wd-tm-val" id="wd-vol">—</div></div>
+          <div class="wd-tm-item"><div class="wd-tm-lbl">TURNOVER</div><div class="wd-tm-val" id="wd-turnover">—</div></div>
+          <div class="wd-tm-item"><div class="wd-tm-lbl">SPREAD</div><div class="wd-tm-val" id="wd-spread">—</div></div>
+          <div class="wd-tm-item"><div class="wd-tm-lbl">INDEX</div><div class="wd-tm-val" id="wd-index">—</div></div>
+        </div>
+      </div>
+
+      <!-- PANEL B: CANDLE STRIP -->
+      <div class="wdv2-panel" id="wdp-candles">
+        <div class="wdv2-ptitle">
+          <span>◈ LAST 8 CANDLES · <span id="wd-candle-tf">—</span></span>
+          <span class="wdv2-ptitle-right" id="wd-candle-updated">—</span>
+        </div>
+        <div class="wd-candle-strip" id="wd-candle-strip">
+          <div class="wdv2-empty">Awaiting candle data...</div>
+        </div>
+        <div class="wd-candle-stats" id="wd-candle-stats"></div>
+      </div>
+
+      <!-- PANEL C: CONVICTION SCORECARD -->
+      <div class="wdv2-panel" id="wdp-score">
+        <div class="wdv2-ptitle">
+          <span>◈ A · CONVICTION SCORECARD</span>
+          <span class="wdv2-ptitle-right" id="wd-score-dir-badge">—</span>
+        </div>
+        <div id="wd-score-bars"></div>
+        <div class="wd-score-total-row">
+          <div>
+            <div class="wd-score-total-lbl">TOTAL CONVICTION</div>
+            <div class="wd-score-total-val" id="wd-score-total">—</div>
+          </div>
+          <div class="wd-gate-pills" id="wd-gate-pills"></div>
+        </div>
+        <!-- [v2.0] Regime banner — volatility tier + resolved params display -->
+        <div id="wd-regime-banner"></div>
+        <!-- PSI panel -->
+        <div class="wd-psi-panel" id="wd-psi-panel">
+          <div class="wd-psi-hdr">
+            <span class="wd-psi-lbl">PRE-SIGNAL INTELLIGENCE</span>
+            <span class="wd-psi-badge psb-inactive" id="wd-psi-badge">INACTIVE</span>
+          </div>
+          <div class="wd-mat-wrap">
+            <span class="wd-mat-lbl">MATURITY</span>
+            <div class="wd-mat-bg"><div class="wd-mat-fill" id="wd-mat-fill" style="width:0%"></div></div>
+            <span class="wd-mat-pct" id="wd-mat-pct">0%</span>
+          </div>
+          <div class="wd-psi-reasons" id="wd-psi-reasons"></div>
+          <div class="wd-cross-events" id="wd-cross-events"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT COLUMN ── -->
+    <div class="wdv2-right">
+
+      <!-- PANEL D: STRUCTURAL MAP -->
+      <div class="wdv2-panel" id="wdp-structure">
+        <div class="wdv2-ptitle">
+          <span>◈ B · STRUCTURAL MAP</span>
+          <span class="wdv2-ptitle-right" id="wd-bos-lbl">—</span>
+        </div>
+        <div class="wd-price-ladder" id="wd-price-ladder">
+          <div class="wdv2-empty">Awaiting scan...</div>
+        </div>
+        <div class="wd-ema-levels" id="wd-ema-levels"></div>
+      </div>
+
+      <!-- PANEL E: MTF ALIGNMENT -->
+      <div class="wdv2-panel" id="wdp-mtf">
+        <div class="wdv2-ptitle">
+          <span>◈ C · MTF ALIGNMENT</span>
+          <span class="wdv2-ptitle-right" id="wd-mtf-score-lbl">—/4 aligned</span>
+        </div>
+        <div class="wd-mtf-grid" id="wd-mtf-grid">
+          <div class="wdv2-empty">Awaiting scan...</div>
+        </div>
+      </div>
+
+      <!-- PANEL F: PRE-ENTRY LEVELS -->
+      <div class="wdv2-panel" id="wdp-levels">
+        <div class="wdv2-ptitle">
+          <span>◈ D · PRE-ENTRY LEVELS</span>
+          <span class="wdv2-ptitle-right" id="wd-sl-source-lbl">—</span>
+        </div>
+        <div class="wd-levels-grid" id="wd-levels-grid">
+          <div class="wdv2-empty">Awaiting scan...</div>
+        </div>
+      </div>
+
+      <!-- PANEL G: MACRO COHERENCE -->
+      <div class="wdv2-panel" id="wdp-coherence">
+        <div class="wdv2-ptitle">
+          <span>◈ E · MACRO COHERENCE</span>
+          <span class="wdv2-ptitle-right" id="wd-coh-verdict-lbl">—</span>
+        </div>
+        <div id="wd-coherence-body">
+          <div class="wdv2-empty">Load macro server to activate</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PANEL H: VERDICT (full width) -->
+  <div class="wd-verdict-wrap">
+    <div class="wdv2-panel wd-verdict-panel" id="wd-verdict-panel">
+      <div class="wd-verdict-header">
+        <span class="wd-verdict-icon" id="wd-verdict-icon">◉</span>
+        <span class="wd-verdict-title" id="wd-verdict-title">WATCHDOG STANDBY — RUN DEEP SCAN</span>
+      </div>
+      <div class="wd-verdict-checklist" id="wd-verdict-checklist"></div>
+    </div>
+  </div>
+
+  <div class="module-log" id="wd-log"></div>
+</div>
+
+<!-- Scripts — engine first, bridge, then panel logic -->
+<script src="engine.js"></script>
+<script>
+// BRIDGE: engine.js declares TFC/CIRCUIT_BREAKER/SETUP_LIBRARY as const at
+// top-level script scope. In browsers, top-level const does NOT attach to
+// window — so panel.js cannot see them via global lookup.
+// This bridge explicitly copies them onto window so panel.js can reference
+// them by name across script boundaries.
+window.TFC              = typeof TFC              !== "undefined" ? TFC              : {};
+window.CIRCUIT_BREAKER  = typeof CIRCUIT_BREAKER  !== "undefined" ? CIRCUIT_BREAKER  : {};
+window.SETUP_LIBRARY    = typeof SETUP_LIBRARY    !== "undefined" ? SETUP_LIBRARY    : {};
+window.ANALYZE_DEFAULTS = typeof ANALYZE_DEFAULTS !== "undefined" ? ANALYZE_DEFAULTS : {};
+// [v7.0] Regime functions — pure engine exports
+window.REGIME_MULTIPLIERS = typeof REGIME_MULTIPLIERS !== "undefined" ? REGIME_MULTIPLIERS : {};
+window.REGIME_THRESHOLDS  = typeof REGIME_THRESHOLDS  !== "undefined" ? REGIME_THRESHOLDS  : {};
+window.computeRegime      = typeof computeRegime      !== "undefined" ? computeRegime      : () => 'NORMAL';
+window.resolveParams      = typeof resolveParams      !== "undefined" ? resolveParams      : (cfg) => cfg;
+// [v8.0] Direction resolver + setup classifier — pure engine exports
+window.resolveDirection   = typeof resolveDirection   !== "undefined" ? resolveDirection   : () => ({ dir:null, confidence:0, votes:{}, bullVotes:0, bearVotes:0, net:0 });
+window.classifySetup      = typeof classifySetup      !== "undefined" ? classifySetup      : () => null;
+</script>
+<script src="panel.js"></script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SIGNAL LOG SCREEN
+     ══════════════════════════════════════════════════════════════ -->
+<div id="screen-siglog" class="screen">
+  <div class="module-header">
+    <div class="mh-left">
+      <span class="mh-icon">◎</span>
+      <span class="mh-title">SIGNAL LOG</span>
+      <span class="mh-sub">Persistent transition ledger · auto-captured</span>
+    </div>
+    <div class="mh-right">
+      <div class="ctx-chips">
+        <div class="ctx-chip"><span class="cc-lbl">TOTAL</span><span class="cc-val" id="slg-total">0</span></div>
+        <div class="ctx-chip"><span class="cc-lbl">TODAY</span><span class="cc-val" id="slg-today" style="color:var(--green)">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="module-toolbar">
+    <!-- Direction filter buttons -->
+    <div class="slg-dir-filter">
+      <button class="slg-dir-btn active" data-dir="all"   onclick="sigLogSetFilterDir('all')">ALL</button>
+      <button class="slg-dir-btn"        data-dir="LONG"  onclick="sigLogSetFilterDir('LONG')">▲ LONG</button>
+      <button class="slg-dir-btn"        data-dir="SHORT" onclick="sigLogSetFilterDir('SHORT')">▼ SHORT</button>
+    </div>
+    <!-- State filter -->
+    <select class="filter-sel" id="slg-filter-state" onchange="sigLogSetFilterState(this.value)">
+      <option value="all">ALL STATES</option>
+      <option value="LONG">LONG fired</option>
+      <option value="SHORT">SHORT fired</option>
+      <option value="WATCH">→ WATCH</option>
+      <option value="FORMING">→ FORMING</option>
+      <option value="HUNT">→ HUNT</option>
+    </select>
+    <!-- Actions -->
+    <button class="btn-ghost" onclick="sigLogExport()" style="margin-left:auto">↓ EXPORT .MD</button>
+    <button class="btn-ghost" onclick="sigLogClear()" style="color:var(--red);border-color:rgba(255,45,85,0.3)">✕ CLEAR ALL</button>
+  </div>
+
+  <!-- Entries -->
+  <div class="slg-scroll">
+    <div id="slg-entries">
+      <div class="slg-empty">
+        <div class="slg-empty-icon">◎</div>
+        <div class="slg-empty-txt">No signals logged yet</div>
+        <div class="slg-empty-sub">Auto-scan and watchlist refresh will populate this log automatically</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
