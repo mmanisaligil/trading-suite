@@ -390,6 +390,7 @@ function showScreen(name) {
       macro:      '⬡ MACRO',
       watchdog:   '◉ WATCHDOG',
       siglog:     '◎ SIGNAL LOG',
+      predictive: '◬ PREDICTIVE ENGINE',
     }[name] || '';
   }
 
@@ -456,6 +457,10 @@ function onModuleEnter(name) {
   if (name === 'siglog') {
     sigLogRender();
   }
+  // ── PREDICTIVE ENGINE v0.8.2 ──────────────────────────────────
+  if (name === 'predictive' && typeof peActivate === 'function') {
+    peActivate();
+  }
 }
 
 // ── Module leave — release resources ─────────────────────────────
@@ -475,6 +480,11 @@ function onModuleLeave(name) {
 
   if (name === 'macro') {
     // No persistent resources to tear down — fetches are one-shot
+  }
+
+  // ── PREDICTIVE ENGINE v0.8.2 ──────────────────────────────────
+  if (name === 'predictive' && typeof peDeactivate === 'function') {
+    peDeactivate();
   }
 
   if (name === 'watchdog') {
@@ -1175,9 +1185,21 @@ function trUpdatePriceCells() {
   });
 }
 
+// ── SORT — three-state cycle: desc → asc → reset ─────────────────
+// State machine per column:
+//   New column   → desc first (largest to smallest)
+//   Same col desc → asc (smallest to largest)
+//   Same col asc  → reset (back to rank/default)
 function trSort(col) {
-  if (TR.sortCol === col) TR.sortDir *= -1;
-  else { TR.sortCol = col; TR.sortDir = 1; }
+  if (TR.sortCol !== col) {
+    TR.sortCol = col;
+    TR.sortDir = -1;          // first click → desc (largest first)
+  } else if (TR.sortDir === -1) {
+    TR.sortDir = 1;           // second click → asc (smallest first)
+  } else {
+    TR.sortCol = 'rank';      // third click → reset to original rank
+    TR.sortDir = 1;
+  }
   trRenderTable();
 }
 
@@ -1205,10 +1227,53 @@ function trGetFiltered() {
     });
   }
 
+  // Signal/state priority map for text-column sorting
+  const STATE_PRIORITY = { LONG:6, SHORT:5, WATCH:4, FORMING:3, HUNT:2, CHOP:1 };
+
   rows.sort((a, b) => {
-    let av = a[TR.sortCol], bv = b[TR.sortCol];
-    if (TR.sortCol === 'symbol') return TR.sortDir * av.localeCompare(bv);
-    return TR.sortDir * (av - bv);
+    let av, bv;
+
+    // ── Universe fields (direct properties) ──────────────────────
+    if (['rank','symbol','price','chg','vol','funding'].includes(TR.sortCol)) {
+      av = a[TR.sortCol];
+      bv = b[TR.sortCol];
+      if (TR.sortCol === 'symbol') return TR.sortDir * String(av).localeCompare(String(bv));
+      return TR.sortDir * ((av || 0) - (bv || 0));
+    }
+
+    // ── scanResult fields ─────────────────────────────────────────
+    const ra = TR.scanResults[a.symbol];
+    const rb = TR.scanResults[b.symbol];
+    const rdA = (ra && ra !== 'scanning') ? ra : null;
+    const rdB = (rb && rb !== 'scanning') ? rb : null;
+
+    if (TR.sortCol === 'score') {
+      av = rdA ? (rdA.score  || 0) : -1;
+      bv = rdB ? (rdB.score  || 0) : -1;
+    } else if (TR.sortCol === 'signal') {
+      av = rdA ? (STATE_PRIORITY[rdA.dir || rdA.signalState] || 0) : -1;
+      bv = rdB ? (STATE_PRIORITY[rdB.dir || rdB.signalState] || 0) : -1;
+    } else if (TR.sortCol === 'state') {
+      av = rdA ? (STATE_PRIORITY[rdA.signalState] || 0) : -1;
+      bv = rdB ? (STATE_PRIORITY[rdB.signalState] || 0) : -1;
+    } else if (TR.sortCol === 'psi') {
+      av = rdA ? (rdA.preSignal?.maturity || 0) : -1;
+      bv = rdB ? (rdB.preSignal?.maturity || 0) : -1;
+    } else if (TR.sortCol === 'age') {
+      // Sort by recency: larger scannedAt = more recent = "smaller age"
+      av = rdA?.scannedAt || 0;
+      bv = rdB?.scannedAt || 0;
+    } else if (TR.sortCol === 'pe') {
+      const pa = (typeof PE !== 'undefined') ? PE.results[a.symbol] : null;
+      const pb = (typeof PE !== 'undefined') ? PE.results[b.symbol] : null;
+      av = pa ? (pa.score || 0) : -1;
+      bv = pb ? (pb.score || 0) : -1;
+    } else {
+      // Fallback: universe rank
+      av = a.rank; bv = b.rank;
+    }
+
+    return TR.sortDir * ((av || 0) - (bv || 0));
   });
 
   return rows;
@@ -1218,6 +1283,16 @@ function trRenderTable() {
   const rows  = trGetFiltered();
   const tbody = $('tr-tbody');
   if (!tbody) return;
+
+  // ── Sort indicators: ↓ desc · ↑ asc · blank = unsorted / reset ──
+  const SORT_COLS = ['rank','symbol','price','chg','vol','funding','signal','score','state','psi','age','pe'];
+  SORT_COLS.forEach(col => {
+    const el = $(`tri-${col}`);
+    if (!el) return;
+    if (TR.sortCol !== col) { el.textContent = ''; el.className = 'tri'; return; }
+    el.textContent  = TR.sortDir === -1 ? '↓' : '↑';
+    el.className    = `tri tri-${TR.sortDir === -1 ? 'desc' : 'asc'}`;
+  });
 
   if (rows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="table-empty">No pairs match filter</td></tr>';
@@ -1339,6 +1414,20 @@ function trRenderTable() {
       }
     }
 
+    // ── PREDICTIVE ENGINE v0.8.2 — PE column mini-cell ───────────
+    let peCell = '<span class="cell-neutral" style="font-size:10px">—</span>';
+    const pRes = (typeof PE !== 'undefined') ? PE.results[u.symbol] : null;
+    if (pRes && pRes.score !== undefined) {
+      const peCol  = pRes.score >= 70 ? '#aa55ff' : pRes.score >= 50 ? '#7744cc' : pRes.score >= 30 ? 'var(--cyan2)' : 'var(--text4)';
+      const peDir  = pRes.dirBias === 'LONG' ? 'var(--green)' : pRes.dirBias === 'SHORT' ? 'var(--red)' : 'var(--text4)';
+      const peDirChar = pRes.dirBias === 'LONG' ? '▲' : pRes.dirBias === 'SHORT' ? '▼' : '·';
+      peCell = `<div class="pe-mini-wrap" onclick="openPredictive('${u.symbol}')" title="Predictive: ${pRes.score}/100 · ${pRes.dirBias} · ${pRes.ignitionWindow?.label || ''}">
+        <div class="pe-mini-bar-track"><div class="pe-mini-bar-fill" style="width:${pRes.score}%;background:${peCol}"></div></div>
+        <span class="pe-mini-score" style="color:${peCol}">${pRes.score}</span>
+        <span class="pe-mini-dir"   style="color:${peDir}">${peDirChar}</span>
+      </div>`;
+    }
+
     // T2: compact row
     trEl.setAttribute('style', rowStyle);
     trEl.innerHTML = `
@@ -1355,6 +1444,7 @@ function trRenderTable() {
       <td class="cell-psi">${psiCell}</td>
       <td class="cell-cross">${crossCell}</td>
       <td class="cell-fresh">${freshCell}</td>
+      <td class="cell-pe">${peCell}</td>
       <td class="cell-actions">
         <button class="act-btn act-scan" onclick="trScanPair('${u.symbol}')" ${r === 'scanning' ? 'disabled' : ''}>⟳</button>
         <button class="act-btn act-detail" onclick="openWatchdog('${u.symbol}')">↗</button>
@@ -1442,6 +1532,10 @@ async function trScanPair(symbol) {
     res.setupType  = res.setupType || null; // [v8.0] named setup archetype from classifySetup()
     toastCheckTransition(symbol, res);
     TR.scanResults[symbol] = res;
+    // ── PREDICTIVE ENGINE v0.8.2: reuse already-fetched data ─────
+    if (typeof peScanPair === 'function') {
+      try { peScanPair(symbol, klines, d); } catch (peErr) { /* non-blocking */ }
+    }
     logTo('tr-log', `${symbol}: ${res.dir || 'NO DIR'} | ${res.signalState} | ${res.score.toFixed(0)}% | ${regime}`, res.dir ? 'log-ok' : 'log-warn');
 
   } catch (e) {

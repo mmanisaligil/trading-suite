@@ -4,8 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>⬡ VIVIENNE · TRADINGPANEL v2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="panel.css"/>
+<link rel="stylesheet" href="predictive.css"/>
 </head>
 <body>
 
@@ -64,6 +66,13 @@
         <div class="module-tag">ENGINE v8.0 · REGIME · SETUP CLASSIFIER</div>
         <div class="module-arrow">→</div>
       </button>
+      <button class="module-card" id="btn-predictive" onclick="launchModule('predictive')">
+        <div class="module-icon">◬</div>
+        <div class="module-name">PREDICTIVE ENGINE</div>
+        <div class="module-desc">Compression · Liquidity Pools · Unmitigated Zones · Session Windows</div>
+        <div class="module-tag">PRE-MOVE DETECTION · BINANCE + BYBIT WS · v0.8.2</div>
+        <div class="module-arrow">→</div>
+      </button>
     </div>
 
     <div class="landing-clock" id="landing-clock">--:--:--</div>
@@ -84,6 +93,7 @@
     <button class="nav-btn" id="nav-macro" onclick="switchModule('macro')">⬡ MACRO</button>
     <button class="nav-btn" id="nav-watchdog" onclick="switchModule('watchdog')">◉ WATCHDOG</button>
     <button class="nav-btn" id="nav-siglog" onclick="switchModule('siglog')">◎ SIGNAL LOG<span class="nav-siglog-badge" id="nav-siglog-badge" style="display:none"></span></button>
+    <button class="nav-btn" id="nav-predictive" onclick="switchModule('predictive')" style="color:#aa55ff">◬ PREDICTIVE</button>
   </div>
   <div class="nav-right">
     <div class="nav-macro-pill" id="nav-regime-pill">REGIME —</div>
@@ -165,20 +175,21 @@
   <div class="table-wrap">
     <table class="data-table" id="tr-table">
       <thead>
-        <tr>
-          <th onclick="trSort('rank')">#</th>
+        <tr id="tr-thead-row">
+          <th onclick="trSort('rank')"    data-sort="rank"    class="tr-th-sort">#    <span class="tri" id="tri-rank"></span></th>
           <th class="th-star" title="Watchlist">★</th>
-          <th onclick="trSort('symbol')">PAIR</th>
-          <th onclick="trSort('price')">PRICE</th>
-          <th onclick="trSort('chg')">24H %</th>
-          <th onclick="trSort('vol')">VOLUME</th>
-          <th onclick="trSort('funding')">FUNDING</th>
-          <th>SIGNAL</th>
-          <th>SCORE</th>
-          <th>STATE</th>
-          <th title="PSI Maturity">PSI</th>
+          <th onclick="trSort('symbol')"  data-sort="symbol"  class="tr-th-sort">PAIR <span class="tri" id="tri-symbol"></span></th>
+          <th onclick="trSort('price')"   data-sort="price"   class="tr-th-sort">PRICE <span class="tri" id="tri-price"></span></th>
+          <th onclick="trSort('chg')"     data-sort="chg"     class="tr-th-sort">24H % <span class="tri" id="tri-chg"></span></th>
+          <th onclick="trSort('vol')"     data-sort="vol"     class="tr-th-sort">VOLUME <span class="tri" id="tri-vol"></span></th>
+          <th onclick="trSort('funding')" data-sort="funding" class="tr-th-sort">FUNDING <span class="tri" id="tri-funding"></span></th>
+          <th onclick="trSort('signal')"  data-sort="signal"  class="tr-th-sort">SIGNAL <span class="tri" id="tri-signal"></span></th>
+          <th onclick="trSort('score')"   data-sort="score"   class="tr-th-sort">SCORE <span class="tri" id="tri-score"></span></th>
+          <th onclick="trSort('state')"   data-sort="state"   class="tr-th-sort">STATE <span class="tri" id="tri-state"></span></th>
+          <th onclick="trSort('psi')"     data-sort="psi"     class="tr-th-sort" title="PSI Maturity">PSI <span class="tri" id="tri-psi"></span></th>
           <th title="Cross events / squeeze">✦</th>
-          <th title="Scan freshness">AGE</th>
+          <th onclick="trSort('age')"     data-sort="age"     class="tr-th-sort" title="Scan freshness">AGE <span class="tri" id="tri-age"></span></th>
+          <th onclick="trSort('pe')"      data-sort="pe"      class="tr-th-sort" title="Predictive Engine score" style="color:#aa55ff">◬ PE <span class="tri" id="tri-pe"></span></th>
           <th></th>
         </tr>
       </thead>
@@ -525,6 +536,142 @@ window.classifySetup      = typeof classifySetup      !== "undefined" ? classify
     </div>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════
+     MODULE: PREDICTIVE ENGINE v0.8.2
+     Pre-move detection — compression before explosion.
+     Families: F1 Volatility Compression · F2 Liquidity Pools
+               F3 Unmitigated Structure · F4 Session Window
+               F5 MTF Convergence
+     WebSocket: Binance Futures + Bybit Linear (PE tab only)
+     ══════════════════════════════════════════════ -->
+<div id="screen-predictive" class="screen">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────── -->
+  <div class="pe-header">
+    <div class="pe-header-left">
+      <span class="pe-header-icon">◬</span>
+      <span class="pe-symbol" id="pe-symbol">—</span>
+      <span class="pe-version-tag">PREDICTIVE ENGINE v0.8.2</span>
+    </div>
+
+    <!-- Pair search -->
+    <div class="pe-search-wrap">
+      <input
+        id="pe-pair-input"
+        class="pe-search-input"
+        placeholder="e.g. BTCUSDT"
+        onkeydown="if(event.key==='Enter'&&this.value.trim()) openPredictive(this.value.trim())"
+        title="Type a pair and press Enter"
+      />
+    </div>
+
+    <!-- Exchange selector -->
+    <div class="pe-exc-group">
+      <button class="pe-exc-btn active" data-exc="both"    onclick="peSetExchange('both')">BOTH</button>
+      <button class="pe-exc-btn"        data-exc="binance" onclick="peSetExchange('binance')">BINANCE</button>
+      <button class="pe-exc-btn"        data-exc="bybit"   onclick="peSetExchange('bybit')">BYBIT</button>
+    </div>
+
+    <!-- WS status -->
+    <div class="pe-ws-status">
+      <span class="pe-ws-label">WS</span>
+      <div class="pe-ws-row">
+        <span class="pe-ws-dot pe-ws-dot-off" id="pe-ws-dot-binance" title="Binance WS: OFF"></span>
+        <span class="pe-ws-name">BN</span>
+      </div>
+      <div class="pe-ws-row">
+        <span class="pe-ws-dot pe-ws-dot-off" id="pe-ws-dot-bybit" title="Bybit WS: OFF"></span>
+        <span class="pe-ws-name">BB</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BODY (score hero + family grid) ──────────────────────────── -->
+  <div class="pe-body" id="pe-body">
+
+    <!-- Hero row — score / dir / ignition / invalidation -->
+    <div class="pe-hero-row">
+      <div class="pe-hero-block" id="pe-score-hero">
+        <span class="pe-hero-score" style="color:var(--text4)">—</span>
+      </div>
+      <div class="pe-meta-block">
+        <div class="pe-ignition-pill" id="pe-ignition">IGNITION —</div>
+        <div class="pe-invalidation"  id="pe-invalidation" style="display:none">—</div>
+        <div class="pe-scan-age"      id="pe-scan-age">—</div>
+      </div>
+    </div>
+
+    <!-- Score legend — persistent reference -->
+    <div class="pe-score-legend">
+      <div class="pe-sl-item">
+        <span class="pe-sl-range">0–29</span>
+        <span class="pe-sl-dot" style="background:var(--text4)"></span>
+        <span class="pe-sl-label" style="color:var(--text4)">COLD</span>
+        <span class="pe-sl-desc">No compression. Don't watch.</span>
+      </div>
+      <div class="pe-sl-sep"></div>
+      <div class="pe-sl-item">
+        <span class="pe-sl-range">30–49</span>
+        <span class="pe-sl-dot" style="background:var(--cyan2)"></span>
+        <span class="pe-sl-label" style="color:var(--cyan2)">WARMING</span>
+        <span class="pe-sl-desc">Early loading. Note it, don't act.</span>
+      </div>
+      <div class="pe-sl-sep"></div>
+      <div class="pe-sl-item">
+        <span class="pe-sl-range">50–69</span>
+        <span class="pe-sl-dot" style="background:#aa55ff"></span>
+        <span class="pe-sl-label" style="color:#aa55ff">HOT</span>
+        <span class="pe-sl-desc">Active compression. Start monitoring.</span>
+      </div>
+      <div class="pe-sl-sep"></div>
+      <div class="pe-sl-item">
+        <span class="pe-sl-range">70–84</span>
+        <span class="pe-sl-dot" style="background:var(--yellow)"></span>
+        <span class="pe-sl-label" style="color:var(--yellow)">CRITICAL</span>
+        <span class="pe-sl-desc">Move is imminent. Prep your entry thesis.</span>
+      </div>
+      <div class="pe-sl-sep"></div>
+      <div class="pe-sl-item">
+        <span class="pe-sl-range">85+</span>
+        <span class="pe-sl-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></span>
+        <span class="pe-sl-label" style="color:var(--green)">IGNITION</span>
+        <span class="pe-sl-desc">Rare. High conviction. Session window likely open.</span>
+      </div>
+    </div>
+
+    <!-- Five precursor family cards -->
+    <div class="pe-family-grid" id="pe-family-grid">
+        <div class="pe-no-data-icon">◬</div>
+        <div class="pe-no-data-txt">SELECT A PAIR</div>
+        <div class="pe-no-data-sub">Click a pair's ◬ PE cell in TradeRecon, or enter a symbol above. Run a TradeRecon scan first to populate precursor data.</div>
+      </div>
+    </div>
+
+    <!-- Live microstructure panel — populated by WS feeds -->
+    <div class="pe-live-panel">
+      <div class="pe-live-header">
+        <span class="pe-live-title">LIVE MICROSTRUCTURE</span>
+        <span class="pe-live-note">(WebSocket · 5s refresh · active only in this tab)</span>
+      </div>
+      <div class="pe-live-grid">
+        <div class="pe-live-cell" id="pe-live-cvd1m">1m  <span style="color:var(--text4)">—</span></div>
+        <div class="pe-live-cell" id="pe-live-cvd5m">5m  <span style="color:var(--text4)">—</span></div>
+        <div class="pe-live-cell" id="pe-live-cvd15m">15m <span style="color:var(--text4)">—</span></div>
+        <div class="pe-live-cell" id="pe-live-obi">OBI <span style="color:var(--text4)">—</span></div>
+        <div class="pe-live-cell" id="pe-live-liqs">LIQ/1m <span style="color:var(--text4)">—</span></div>
+      </div>
+    </div>
+
+  </div><!-- /pe-body -->
+
+  <!-- ── LOG ───────────────────────────────────────────────────────── -->
+  <div class="module-log" id="pe-log"></div>
+
+</div><!-- /screen-predictive -->
+
+<!-- ── PREDICTIVE ENGINE v0.8.2 — load after panel.js ────────────── -->
+<script src="predictive-engine.js"></script>
 
 </body>
 </html>
